@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>TicTacToe</title>
+        <script src=""></script>
+        <style>
+            .cell {
+                width: 100px;
+                height: 100px;
+                background-color: pink;
+                display: inline-block;   /*排成一行,默认baseinline对齐，及纵向对齐，所以要加一个vertical-align ：middle*/
+                border: solid 1px white;
+                vertical-align: middle;
+
+                line-height: 100px;
+                font-size: 50px;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="board"></div>
+        <script>
+            // let pattern = [        //将二维数组换成一维数组
+            //     [0,2,0],
+            //     [0,1,0],
+            //     [0,0,0]
+            // ];
+            let pattern = [
+                0,0,0,
+                0,0,0,               //i*3+j
+                0,0,0,
+            ]
+
+            let color = 1;
+
+            function show(){
+                let board = document.getElementById("board");
+
+                board.innerHTML ="";   //清空棋盘，重新画
+                
+                for(let i = 0; i < 3; i++){
+                    for(let j = 0; j < 3; j++){
+                        let cell = document.createElement("div");
+                        cell.classList.add("cell");
+                        cell.innerText = 
+                            pattern[ i * 3 + j ] == 2 ? "❌" :
+                            pattern[ i * 3 + j ] == 1 ? "⭕" :
+                            "";
+                        cell.addEventListener("click", () => userMove(j,i))
+                        board.appendChild(cell);
+                    }
+                    board.appendChild(document.createElement("br"))
+                }
+            }
+
+
+
+            function userMove(x,y){
+                pattern[y*3+x] = color;
+                if(check(pattern , color)){        //传入参数，让check不依赖全局变量，变成一个纯函数
+                    alert(color == 2 ? "❌ is winner!" : "⭕ is winner!")
+                }
+                color = 3 - color;
+                console.log(bestChoice(pattern,color));     //每次move之后都给出一个bestChoice
+                show();
+                computerMove();
+                // if(willwin(pattern , color)){           //加入一个类似AI的判断：哪一方可以让check为true。
+                //     console.log(color == 2 ? "❌ will win!" : "⭕ will win");
+                // }
+            } 
+
+
+
+            function computerMove(){
+                let choice = bestChoice(pattern,color);   //找到当前最好的点
+                if(choice.point)
+                    pattern[choice.point[1] * 3 + choice.point[0]] = color;
+                if(check(pattern , color)){
+                    alert(color == 2 ? "❌ is winner!" : "⭕ is winner!");
+                }
+                color = 3 - color;
+                show();
+            }
+
+
+            function check(pattern,color){
+                for(let i = 0; i < 3; i++){
+                    let win = true;          //为了让win变成局部变量，我们反复声明，并在需要声明的地方用花括号{}括起来
+                    for(let j = 0; j < 3; j++){         //遍历横列查看是否等于当前落子的颜色，不管是空还是对方的棋子都返回false
+                        if(pattern[ i * 3 + j ] !== color){
+                            win = false
+                        }
+                    }
+                    if(win)
+                        return true;
+                }
+                for(let i = 0; i < 3;i++){
+                    let win = true;
+                    for(let j = 0;j < 3;j++){
+                        if(pattern[j*3+i] !== color){     //纵行三个
+                            win = false
+                        }
+                    }
+                    if(win)
+                        return true
+                }
+                {   
+                    let win = true;
+                    for(let j = 0; j < 3; j++){
+                        if(pattern[j*3+j] !== color){             //反斜向三个子坐标相同
+                            win = false
+                        }
+                    }
+                    if(win)
+                        return true
+                }
+                {
+                    let win = true;
+                    for(let j = 0; j < 3; j++){
+                        if(pattern[j*3+2-j] !== color){       //正斜向三个字坐标相加=2，即[n][2-n]
+                            win = false 
+                        }
+                    }
+                    if(win)
+                        return true;
+                }
+                return false;
+            }   
+
+
+
+            function clone(pattern){                             //为避免棋盘因为willwin判断被破坏，将棋盘clone成一个新的实例
+                // return JSON.parse(JSON.stringify(pattern));   这是二维数组的复制方法，一维数组可以有另一种方法、
+                return Object.create(pattern);        //以原有pattern为原型创建了一个新对象，不仅继承了原来的数据，还继承了原来的方法
+            }
+
+
+
+            function willwin(pattern , color){
+                for(let i = 0; i < 3; i++){
+                    for(let j = 0; j < 3; j++){
+                        if(pattern[ i * 3 + j ])          //该位置不为空，则跳过，为空就clone新棋盘放入当前棋子
+                            continue;
+                        let tmp = clone(pattern);
+                        tmp[i][j] = color;
+                        if(check(tmp,color)){
+                            return [j,i];    //修改成point的坐标
+                        }
+                    }
+                }
+                return null;
+            }
+
+
+            function bestChoice(pattern,color){
+                let point;
+                if(point = willwin(pattern,color)){        //判断是否要赢，要赢的话返回一个可下的坐标点point和result
+                    return{
+                        point: point,
+                        result: 1,             //result值   1：要赢了    -1：要输了   0：和了
+                    }
+                }
+                let result = -2;   //result初始值，弱于任何一个局面
+                // let point = null;
+                outer : for(let i = 0; i < 3; i++){        //添加一个label
+                    for(let j = 0; j < 3; j++){
+                        if(pattern[i*3+j] !== 0)
+                            continue;
+                        let tmp = clone(pattern);
+                        tmp[i*3+j] = color;
+                        let r = bestChoice(tmp,3-color).result;        //r是对方的最好局面
+
+                        if(- r > result){            //递归，对方最差的局面即要输的局面就是我们最好的局面
+                            result = - r;
+                            point = [j,i];
+                        }
+                        if(result == 1)
+                            break outer;            //如果胜利了，break 两层循环
+                    }
+                }
+                return {
+                    point: point,
+                    result: point ? result : 0       //有point点可走，返回可走的那个点，没点可走返回0，即和局
+                }
+            }
+            show(pattern);
+                    console.log(bestChoice(pattern,color));
+        </script>  
+    </body>
+</html>
