@@ -1,1 +1,3 @@
-学习笔记
+LL算法的大概思路弄懂了，但是还有很多细节的代码没有弄清楚，例如非终结符这块为什么要调用MultiplicativeExpression
+
+还有一个error没有解决，我的yield报Uncaught SyntaxError，不知道是不是因为是ES6 的特性，需要去引入下载什么文件

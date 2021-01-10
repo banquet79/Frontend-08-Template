@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>词法分析——正则 </title>  
+    </head>
+    <body>
+        <script>
+            var regexp = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\*)|(\/)|(\+)|(\-)/g             
+            //以或|分开，正则表达用于词法分析
+            //+号表示括号内的字符必须至少出现一次
+            //* 号代表前面的字符可以不出现
+            //? 问号代表前面的字符最多只可以出现一次
+            //[0-9\.]匹配0-9的字符，允许有.小数点
+
+            var dictionary = ["Number","Whitesspace","LineTerminator","*","/","+","-"];            //扫描字符串出来的token名
+                            //[0-9]     空白符和tab    换行符\r\n                  
+
+
+            function tokenize( source ){
+                var result =  null;
+                var LastIndex = 0;   //LastIndex用于规定下次匹配的起始位置，当方法找不到可以匹配的文本时，LastIndex为0；通过长度判断匹配到的字符里是否有不认识的
+                while(true){
+                    LastIndex = regexp.LastIndex;
+                    result = regexp.exec(source);       //检索字符串中的正则表达式的匹配
+                    console.log(result);
+                    if(!result)
+                        break;      //result=null,!null的值为true
+                    if(regexp.LastIndex - LastIndex > result[0].length)   //新的LastIndex长度超过旧的LastIndex，则有不认识的格式
+                        break;
+
+                    let token = {    //将匹配到的字符转换成一个有效的token
+                        type:null,
+                        value:null,
+                    }
+
+                    for(var i = 1; i <= dictionary.length; i++ ){        
+                        if(result[i])
+                            token.type = dictionary[i-1]
+                            // console.log(dictionary[i-1]);
+                    }
+                    token.value = result[0];
+
+                    yield token;   //利用yield让函数变成一个生成器，类似return返回一个有value(值)和done(是否完成)的对象
+                    // console.log(result);
+                }
+                yield={
+                    type : "EOF",
+                }
+            }
+
+            for(let token of tokenize("1024 + 10 * 25")){
+                console.log(token);
+            }
+        </script>
+    </body>
+</html>
