@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <style>
+            #container{
+                width: 701px;       /*为啥子是701*/
+                line-height: 7px;                 /*行高一般比字体大，否则发生重叠*/
+            }
+            .cell {
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                background-color: gray;
+                border-bottom: solid 1px white;
+                border-right: solid 1px white;
+                vertical-align: middle;
+            }
+        </style>
+        <div id="container"></div>          
+        <button onclick="localStorage['map'] = JSON.stringify(map)">save</button>          
+
+
+        <script>
+            let map = localStorage['map'] ? JSON.parse(localStorage["map"]) : Array(10000).fill(0);      //采用一维数组存储地图数据,fill()函数都赋值为0，每次初始化的时候都判断一次是否有已save的地图，加载出来
+            
+            let container = document.getElementById("container");
+            for(let y = 0; y < 100; y++){               //为什么用双层循环遍历一维数组
+                for(let x = 0; x < 100; x++){
+                    let cell = document.createElement("div");   //给每个单元格一个div
+                    cell.classList.add("cell");
+
+                    if(map[100*y + x] == 1)        //=1则表示有墙，涂黑
+                        cell.style.backgroundColor = "#58ACFA";
+                    
+                    cell.addEventListener("mousemove",()=>{
+                        if(mousedown) {
+                            if(clear) {       //clear为右键
+                                cell.style.backgroundColor = "",
+                                map[100*y + x] = 0;
+                            } else{       
+                                cell.style.backgroundColor = "#58ACFA";
+                                map[100*y + x] = 1;
+                            }
+                        }
+                    })
+                    container.appendChild(cell);
+                }
+            }
+            
+            let mousedown = false;
+            let clear = false;
+            document.addEventListener("mousedown",e =>{
+                mousedown = true;
+                clear = (e.which === 3)             //监听鼠标和键盘，1为左键，2为滚轮，3为右键
+            });
+            document.addEventListener("mouseup",()=> mousedown = false);       // document.addEventListener("contextmenu",e=> e.preventDefault());   //将右键弹出菜单的事件contextmenu用preventDefault移除
+
+
+ 
+
+            function sleep(t){
+                return new Promise(function(reslove){
+                    setTimeout(reslove,t);
+                });
+            }
+
+
+            //广度优先算法 ，栈是后进先出，队是先进先出
+            async function findPath(map,start,end){           //路径有三个参数 
+                let table = Object.create(map);
+                var queue = [start];      //数组队列,将start点周围的节点都逐个加入队列里
+
+
+                async function insert(x,y,pre){       //入队逻辑 ，pre为可走的路，
+                    if(x < 0 || x >= 100 || y < 0 || y >= 100)     //该点不存在
+                        return ;
+                    if(table[y*100 + x])            //该点为1，是障碍
+                        return ;
+
+                    // await sleep(1);
+                    container.children[y*100 + x].style.backgroundColor = "#A9F5BC"          //给标记2的可行路线一个亮色
+                    table[y*100 + x] = pre;        //给符合条件的点赋值pre，表示可走，防止冲虚
+                    queue.push([x,y]);           //将该点入队到队伍的末端
+                }
+
+                while(queue.length){
+                    let [x,y] = queue.shift();         //将队列的第一个点删除，并返回这个点
+                    console.log(x,y);
+                    if(x === end[0] && y === end[1]){         //如果终点有值，结束寻路
+                        let path = [];
+
+                        while(x != start[0] || y != start[1]){
+                            path.push(map[y*100 + x]);
+                            [x,y] = table[y*100 +x];           //解构取值，将table里面标记为pre的重新取出来，再给他一个颜色
+                            await sleep(30); 
+                            container.children[y*100 + x].style.backgroundColor = "#FE642E";
+                        }
+                        return path;
+                    }
+
+
+                    await insert(x-1,y,[x,y]);        //将当前终点的上下左右的点入队
+                    await insert(x,y-1,[x,y]);
+                    await insert(x+1,y,[x,y]);
+                    await insert(x,y+1,[x,y]);
+
+                    await insert(x-1,y-1,[x,y]);        //终点斜对角线的点  
+                    await insert(x+1,y-1,[x,y]);
+                    await insert(x-1,y+1,[x,y]);
+                    await insert(x+1,y+1,[x,y]);
+
+                }
+                return null;
+            }    
+        </script>
+    </body>
+</html>
